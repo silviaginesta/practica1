@@ -1,102 +1,143 @@
 #ifndef LISTARRAY_H
 #define LISTARRAY_H
 
-#include <cstddef>      // size_t
-#include <stdexcept>    // std::out_of_range
+#include <cstddef>
+#include <ostream>
+#include <stdexcept>
 #include "List.h"
 
 template <typename T>
 class ListArray : public List<T> {
 private:
-    T* data;
-    std::size_t n;
-    std::size_t cap;
+    T* data_;
+    std::size_t size_;
+    std::size_t cap_;
 
     void ensure_capacity(std::size_t minCap) {
-        if (cap >= minCap) return;
-        std::size_t newCap = (cap == 0) ? 4 : cap;
+        if (cap_ >= minCap) return;
+        std::size_t newCap = (cap_ == 0) ? 4 : cap_;
         while (newCap < minCap) newCap *= 2;
 
         T* newData = new T[newCap];
-        for (std::size_t i = 0; i < n; ++i) newData[i] = data[i];
+        for (std::size_t i = 0; i < size_; ++i) newData[i] = data_[i];
 
-        delete[] data;
-        data = newData;
-        cap = newCap;
+        delete[] data_;
+        data_ = newData;
+        cap_ = newCap;
+    }
+
+    void check_index_get(int index) const {
+        if (index < 0 || static_cast<std::size_t>(index) >= size_) {
+            throw std::out_of_range("index out of range");
+        }
+    }
+
+    void check_index_insert(int index) const {
+        // insert permite index == size_ (insertar al final)
+        if (index < 0 || static_cast<std::size_t>(index) > size_) {
+            throw std::out_of_range("index out of range");
+        }
     }
 
 public:
-    // Constructor / destructor
-    ListArray() : data(nullptr), n(0), cap(0) {}
-    ~ListArray() override { delete[] data; }
+    ListArray() : data_(nullptr), size_(0), cap_(0) {}
+    ~ListArray() override { delete[] data_; }
 
-    // Copia (regla de 3 básica)
-    ListArray(const ListArray& other) : data(nullptr), n(other.n), cap(other.cap) {
-        data = (cap == 0) ? nullptr : new T[cap];
-        for (std::size_t i = 0; i < n; ++i) data[i] = other.data[i];
+    // Regla de 3 (recomendable)
+    ListArray(const ListArray& other) : data_(nullptr), size_(other.size_), cap_(other.cap_) {
+        data_ = (cap_ == 0) ? nullptr : new T[cap_];
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
     }
 
     ListArray& operator=(const ListArray& other) {
         if (this == &other) return *this;
-        delete[] data;
-        n = other.n;
-        cap = other.cap;
-        data = (cap == 0) ? nullptr : new T[cap];
-        for (std::size_t i = 0; i < n; ++i) data[i] = other.data[i];
+        delete[] data_;
+        size_ = other.size_;
+        cap_ = other.cap_;
+        data_ = (cap_ == 0) ? nullptr : new T[cap_];
+        for (std::size_t i = 0; i < size_; ++i) data_[i] = other.data_[i];
         return *this;
     }
 
-    // ---- Métodos heredados (AJUSTA nombres a tu List.h) ----
-    bool empty() const override { return n == 0; }
-    std::size_t size() const override { return n; }
+    // ===== Métodos de List<T> =====
+    bool empty() const override { return size_ == 0; }
+    std::size_t size() const override { return size_; }
 
-    void clear() override {
-        // No hace falta liberar memoria; basta con “vaciar”
-        n = 0;
+    void clear() override { size_ = 0; }
+
+    void push_front(const T& value) override { prepend(value); }
+    void push_back(const T& value) override { append(value); }
+
+    void pop_front() override { (void)remove(0); }
+    void pop_back() override { (void)remove(static_cast<int>(size_) - 1); }
+
+    T& front() override { return get(0); }
+    const T& front() const override { return get(0); }
+
+    T& back() override { return get(static_cast<int>(size_) - 1); }
+    const T& back() const override { return get(static_cast<int>(size_) - 1); }
+
+    // ===== API que usa el test =====
+    void insert(int index, const T& value) {
+        check_index_insert(index);
+        ensure_capacity(size_ + 1);
+
+        for (std::size_t i = size_; i > static_cast<std::size_t>(index); --i) {
+            data_[i] = data_[i - 1];
+        }
+
+        data_[index] = value;
+        ++size_;
     }
 
-    void push_back(const T& value) override {
-        ensure_capacity(n + 1);
-        data[n] = value;
-        ++n;
+    T remove(int index) {
+        check_index_get(index);
+        T removed = data_[index];
+
+        for (std::size_t i = static_cast<std::size_t>(index); i + 1 < size_; ++i) {
+            data_[i] = data_[i + 1];
+        }
+
+        --size_;
+        return removed;
     }
 
-    void push_front(const T& value) override {
-        ensure_capacity(n + 1);
-        for (std::size_t i = n; i > 0; --i) data[i] = data[i - 1];
-        data[0] = value;
-        ++n;
+    T& get(int index) {
+        check_index_get(index);
+        return data_[index];
     }
 
-    void pop_back() override {
-        if (n == 0) throw std::out_of_range("pop_back on empty ListArray");
-        --n;
+    const T& get(int index) const {
+        check_index_get(index);
+        return data_[index];
     }
 
-    void pop_front() override {
-        if (n == 0) throw std::out_of_range("pop_front on empty ListArray");
-        for (std::size_t i = 0; i + 1 < n; ++i) data[i] = data[i + 1];
-        --n;
+    void append(const T& value) {
+        insert(static_cast<int>(size_), value);
     }
 
-    T& front() override {
-        if (n == 0) throw std::out_of_range("front on empty ListArray");
-        return data[0];
+    void prepend(const T& value) {
+        insert(0, value);
     }
 
-    const T& front() const override {
-        if (n == 0) throw std::out_of_range("front on empty ListArray");
-        return data[0];
+    int search(const T& value) const {
+        for (std::size_t i = 0; i < size_; ++i) {
+            if (data_[i] == value) return static_cast<int>(i);
+        }
+        return -1;
     }
 
-    T& back() override {
-        if (n == 0) throw std::out_of_range("back on empty ListArray");
-        return data[n - 1];
-    }
+    T& operator[](int index) { return get(index); }
+    const T& operator[](int index) const { return get(index); }
 
-    const T& back() const override {
-        if (n == 0) throw std::out_of_range("back on empty ListArray");
-        return data[n - 1];
+    friend std::ostream& operator<<(std::ostream& os, const ListArray<T>& list) {
+        os << "[";
+        for (std::size_t i = 0; i < list.size_; ++i) {
+            os << list.data_[i];
+            if (i + 1 < list.size_) os << ", ";
+        }
+        os << "]";
+        return os;
     }
 };
 
