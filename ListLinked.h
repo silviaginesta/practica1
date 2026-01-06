@@ -36,7 +36,7 @@ public:
     // ===== Implementación completa de List<T> =====
 
     // Interfaz principal
-    void insert(int pos, T e) override {
+    void insert(int pos, T e) {
         check_pos_insert(pos);
         if (pos == 0) {
             first = new Node<T>(e, first);
@@ -47,15 +47,15 @@ public:
         ++n;
     }
 
-    void append(T e) override {
+    void append(T e) {
         insert(n, e);
     }
 
-    void prepend(T e) override {
+    void prepend(T e) {
         insert(0, e);
     }
 
-    T remove(int pos) override {
+    T remove(int pos) {
         check_pos_get(pos);
         Node<T>* to_delete;
         if (pos == 0) {
@@ -72,12 +72,12 @@ public:
         return value;
     }
 
-    T get(int pos) const override {
+    T get(int pos) const {
         check_pos_get(pos);
         return node_at(pos)->data;
     }
 
-    int search(T e) const override {
+    int search(T e) const {
         Node<T>* p = first;
         int i = 0;
         while (p != nullptr) {
@@ -88,11 +88,11 @@ public:
         return -1;
     }
 
-    bool empty() const override { return n == 0; }
-    std::size_t size() const override { return static_cast<std::size_t>(n); }
+    bool empty() const { return n == 0; }
+    std::size_t size() const { return static_cast<std::size_t>(n); }
 
     // Métodos extra que exige tu List.h
-    void clear() override {
+    void clear() {
         while (first != nullptr) {
             Node<T>* aux = first->next;
             delete first;
@@ -101,38 +101,38 @@ public:
         n = 0;
     }
 
-    void push_front(const T& value) override {
+    void push_front(const T& value) {
         prepend(value);
     }
 
-    void push_back(const T& value) override {
+    void push_back(const T& value) {
         append(value);
     }
 
-    void pop_front() override {
+    void pop_front(){
         (void)remove(0);
     }
 
-    void pop_back() override {
+    void pop_back() {
         (void)remove(n - 1);
     }
 
-    T& front() override {
+    T& front() {
         check_pos_get(0);
         return node_at(0)->data;
     }
 
-    const T& front() const override {
+    const T& front() const {
         check_pos_get(0);
         return node_at(0)->data;
     }
 
-    T& back() override {
+    T& back() {
         check_pos_get(n - 1);
         return node_at(n - 1)->data;
     }
 
-    const T& back() const override {
+    const T& back() const {
         check_pos_get(n - 1);
         return node_at(n - 1)->data;
     }
